@@ -36,15 +36,15 @@ module "vnet" {
   location            = "${var.arm_region}"
   address_space       = "${var.arm_network_address_space}"
   subnet_prefixes     = ["${var.arm_subnet1_address_space}"]
-  subnet_names        = ["vault"]
+  subnet_names        = ["clients"]
 
   tags = {
     environment = "azure-vms"
   }
 }
 
-resource "azurerm_subnet" "mysql" {
-  name                 = "mysql"
+resource "azurerm_subnet" "vault" {
+  name                 = "vault"
   resource_group_name  = "${var.arm_resource_group_name}"
   virtual_network_name = "${module.vnet.vnet_name}"
   address_prefix       = "${var.arm_subnet2_address_space}"
@@ -57,7 +57,7 @@ module "vaultserver" {
   location = "${var.arm_region}"
   vm_os_simple = "UbuntuServer"
   public_ip_dns = ["${lower(random_id.dns.b64_url)}"]
-  vnet_subnet_id = "${module.vnet.vnet_subnets[0]}"
+  vnet_subnet_id = "${azurerm_subnet.vault.id}"
   vm_size = "Standard_D2_V3"
   vm_hostname = "${random_id.dns.b64_url}"
   storage_account_type = "StandardSSD_LRS"
@@ -100,7 +100,7 @@ resource "azurerm_mysql_virtual_network_rule" "vaultvnetrule" {
   name                = "vault-vnet-rule"
   resource_group_name = "${var.arm_resource_group_name}"
   server_name         = "${azurerm_mysql_server.vaultmysql.name}"
-  subnet_id           = "${azurerm_subnet.mysql.id}"
+  subnet_id           = "${azurerm_subnet.vault.id}"
 }
 
 resource "azurerm_mysql_database" "vaultdb" {
