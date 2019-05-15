@@ -18,7 +18,7 @@ provider "azurerm" {
 ##################################################################################
 
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.arm_resource_group_name}"
+  name     = "${var.arm_resource_group_name}-azurevms"
   location = "${var.arm_region}"
 }
 
@@ -31,8 +31,8 @@ resource "random_id" "dns" {
 # NETWORKING #
 module "vnet" {
   source              = "Azure/network/azurerm"
-  resource_group_name = "${var.arm_resource_group_name}"
-  vnet_name           = "${var.arm_resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  vnet_name           = "${azurerm_resource_group.rg.name}"
   location            = "${var.arm_region}"
   address_space       = "${var.arm_network_address_space}"
   subnet_prefixes     = ["${var.arm_subnet1_address_space}"]
@@ -45,7 +45,7 @@ module "vnet" {
 
 resource "azurerm_subnet" "vault" {
   name                 = "vault"
-  resource_group_name  = "${var.arm_resource_group_name}"
+  resource_group_name  = "${azurerm_resource_group.rg.name}"
   virtual_network_name = "${module.vnet.vnet_name}"
   address_prefix       = "${var.arm_subnet2_address_space}"
   service_endpoints = ["Microsoft.Sql"]
@@ -63,7 +63,7 @@ module "vaultserver" {
   storage_account_type = "StandardSSD_LRS"
   ssh_key = "${var.ssh_key_pub}"
   admin_username = "vaultadmin"
-  resource_group_name = "${var.arm_resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
 
   tags = {
       environment = "azure-vms"
@@ -75,7 +75,7 @@ module "vaultserver" {
 resource "azurerm_mysql_server" "vaultmysql" {
   name                = "vault-mysql-1"
   location            = "${var.arm_region}"
-  resource_group_name = "${var.arm_resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
 
   sku {
     name     = "GP_Gen5_2"
@@ -98,14 +98,14 @@ resource "azurerm_mysql_server" "vaultmysql" {
 
 resource "azurerm_mysql_virtual_network_rule" "vaultvnetrule" {
   name                = "vault-vnet-rule"
-  resource_group_name = "${var.arm_resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
   server_name         = "${azurerm_mysql_server.vaultmysql.name}"
   subnet_id           = "${azurerm_subnet.vault.id}"
 }
 
 resource "azurerm_mysql_database" "vaultdb" {
   name                = "vaultdb"
-  resource_group_name = "${var.arm_resource_group_name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
   server_name         = "${azurerm_mysql_server.vaultmysql.name}"
   charset             = "utf8"
   collation           = "utf8_unicode_ci"
