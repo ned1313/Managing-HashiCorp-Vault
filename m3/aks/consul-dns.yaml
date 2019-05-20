@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+  name: coredns-custom
+  namespace: kube-system
+data:
+  consul.server: |
+    consul:53 {
+      errors
+      cache 30
+      proxy . 10.0.177.0
+    }

@@ -1,0 +1,9 @@
+vault:
+  dev: false
+  config:
+    storage:
+      consul:
+        address: "localhost:8500"
+
+consulAgent:
+  join: consul.service.consul
