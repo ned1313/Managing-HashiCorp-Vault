@@ -9,3 +9,9 @@ arm_subscription_id = ""
 ssh_key_pub = "~/.ssh/id_rsa.pub"
 
 mysql_password = ""
+
+aks_prefix = "vault"
+
+kubernetes_client_id = ""
+
+kubernetes_client_secret = ""
