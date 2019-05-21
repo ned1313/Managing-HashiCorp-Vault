@@ -30,3 +30,11 @@ kubectl apply -f consul-dns.yaml
 #Expose the UI
 helm install stable/nginx-ingress --namespace default --set controller.replicaCount=1
 kubectl get svc -l app=nginx-ingress
+kubectl apply -f ui-ingress.yaml
+
+#Let's get the repo for the vault chart
+helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator
+helm install --name v1 --values vault-values.yaml incubator/vault
+
+#And expose the Vault service publicly
+kubectl apply -f vault-ingress.yaml

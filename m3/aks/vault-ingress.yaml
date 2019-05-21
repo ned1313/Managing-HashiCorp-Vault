@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-lb
+  labels:
+    app: vault
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8200
+  selector:
+    app: vault

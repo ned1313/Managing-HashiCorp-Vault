@@ -4,6 +4,6 @@ vault:
     storage:
       consul:
         address: "localhost:8500"
-
+replicaCount: 1
 consulAgent:
   join: consul.service.consul
