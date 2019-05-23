@@ -1,10 +1,4 @@
-# List existing policies
-path "sys/policy"
-{
-  capabilities = ["read"]
-}
-
-# Manage and manage secret backends broadly across Vault.
+# Create and manage secret backends broadly across Vault.
 path "sys/mounts/*"
 {
   capabilities = ["create", "read", "update", "delete", "list", "sudo"]
@@ -13,5 +7,5 @@ path "sys/mounts/*"
 # Read health checks
 path "sys/health"
 {
-  capabilities = ["read", "sudo"]
+  capabilities = ["read"]
 }

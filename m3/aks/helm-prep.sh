@@ -39,6 +39,10 @@ kubectl create secret tls vault-tls --key privkey.pem --cert fullchain.pem
 helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator
 helm install --name v1 --values vault-values.yaml incubator/vault
 
+#If there are issues with the helm chart, grab my copy
+git clone https://github.com/ned1313/charts.git
+helm install --name v1 --values PATH_TO_VALUES .
+
 #And expose the Vault service publicly
 kubectl apply -f vault-ingress.yaml
 az network dns record-set a add-record --subscription SUB_NAME -g RESOURCE_GROUP -z ZONE_NAME -n vault-aks --ipv4-address LB_IP_ADDRESS

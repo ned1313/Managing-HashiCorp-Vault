@@ -1,3 +1,6 @@
+#Install unzip
+sudo apt install unzip -y
+
 #Install Vault
 VAULT_VERSION="1.1.2"
 wget https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip
@@ -20,8 +23,8 @@ sudo chmod 640 /etc/vault/vault_server.hcl
 
 #Adding certificates
 sudo mkdir /etc/vault/certs
-sudo cp ~/star_globomantics_xyz.pem /etc/vault/certs/vault_cert.crt
-sudo cp ~/star_globomantics_xyz.key /etc/vault/certs/vault_cert.key
+sudo cp ~/fullchain.pem /etc/vault/certs/vault_cert.crt
+sudo cp ~/privkey.pem /etc/vault/certs/vault_cert.key
 sudo chown --recursive vault:vault /etc/vault/certs
 sudo chmod 750 --recursive /etc/vault/certs/
 
@@ -37,4 +40,4 @@ sudo systemctl start vault
 sudo vi /etc/hosts
 
 #Set environment variable for vault server
-export VAULT_ADDR=https://vault-vm.globomantics.xyz:8200
+export VAULT_ADDR=https://vault-vms.globomantics.xyz:8200
