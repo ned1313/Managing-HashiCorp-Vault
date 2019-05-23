@@ -10,3 +10,6 @@
 
 # .tfplan files
 *.tfplan
+
+# .pem files
+*.pem

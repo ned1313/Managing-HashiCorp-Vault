@@ -1,9 +1,23 @@
 vault:
+  extraVolumes:
+    - name: vault-tls
+      secret:
+        secretName: vault-tls
+  extraVolumeMounts:
+    - name: vault-tls
+      mountPath: /vault/tls
+      readOnly: true
   dev: false
   config:
     storage:
       consul:
         address: "localhost:8500"
+    listener:
+      tcp:
+        tls_disable: false
+        tls_cert_file: /vault/tls/tls.crt
+        tls_key_file: /vault/tls/tls.key
+    ui: true
 replicaCount: 1
 consulAgent:
   join: consul.service.consul

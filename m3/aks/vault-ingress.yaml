@@ -8,5 +8,6 @@ spec:
   type: LoadBalancer
   ports:
   - port: 8200
+    targetPort: 8200
   selector:
     app: vault

@@ -10,5 +10,5 @@ data:
     consul:53 {
       errors
       cache 30
-      proxy . 10.0.177.0
+      proxy . 10.0.185.240
     }

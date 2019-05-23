@@ -19,18 +19,21 @@ kubectl apply -f helm-rbac.yaml
 helm init --service-account tiller
 
 #Install the helm chart
-helm install --dry-run ./
 helm install --name "consul-helm" ./
 helm status consul-helm
 
-#Register the stubDomain in kube-dns
+#Register the stubDomain in core-dns
 kubectl get svc consul-helm-dns -o jsonpath='{.spec.clusterIP}'
 kubectl apply -f consul-dns.yaml
+kubectl delete pod --namespace kube-system -l k8s-app=kube-dns
 
 #Expose the UI
 helm install stable/nginx-ingress --namespace default --set controller.replicaCount=1
 kubectl get svc -l app=nginx-ingress
 kubectl apply -f ui-ingress.yaml
+
+#Add the vault certificates
+kubectl create secret tls vault-tls --key privkey.pem --cert fullchain.pem
 
 #Let's get the repo for the vault chart
 helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator
@@ -38,3 +41,4 @@ helm install --name v1 --values vault-values.yaml incubator/vault
 
 #And expose the Vault service publicly
 kubectl apply -f vault-ingress.yaml
+az network dns record-set a add-record --subscription SUB_NAME -g RESOURCE_GROUP -z ZONE_NAME -n vault-aks --ipv4-address LB_IP_ADDRESS
