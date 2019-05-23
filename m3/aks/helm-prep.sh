@@ -46,3 +46,6 @@ helm install --name v1 --values PATH_TO_VALUES .
 #And expose the Vault service publicly
 kubectl apply -f vault-ingress.yaml
 az network dns record-set a add-record --subscription SUB_NAME -g RESOURCE_GROUP -z ZONE_NAME -n vault-aks --ipv4-address LB_IP_ADDRESS
+
+#Use kubectl proxy to initialize vault - unsealing breaks on LB
+kubectl port-forward --namespace default POD_NAME 8200:8200
