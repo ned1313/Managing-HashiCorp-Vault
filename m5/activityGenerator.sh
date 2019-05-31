@@ -2,11 +2,9 @@
 export VAULT_ADDR=https://vault-vms.globomantics.xyz:8200
 export VAULT_TOKEN=AddYourVaultTokenHere
 
-vault login
-
 #Add the secret backend if it isn't there already
 curl --header "X-Vault-Token: $VAULT_TOKEN" --request POST \
- --data @secret.json $VAULT_ADDR/v1/sys/mounts/secret
+ --data '{"type": "kv", "options": {"version": "1"}}' $VAULT_ADDR/v1/sys/mounts/secret
 
 #Create five secrets
 secrets='Life Universe Everything Thanks Fish'
