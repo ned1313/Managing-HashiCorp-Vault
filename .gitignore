@@ -13,3 +13,6 @@
 
 # .pem files
 *.pem
+
+# .asc files
+*.asc
