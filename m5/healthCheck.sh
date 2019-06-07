@@ -1,5 +1,5 @@
 #Bash
-curl https://vault-vms.globomantics.xyz:8200/v1/sys/health
+curl https://vault-vms.globomantics.xyz:8200/v1/sys/health | jq
 
 #PowerShell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

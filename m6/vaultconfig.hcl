@@ -26,7 +26,7 @@ telemetry {
 }
 
 seal "azurekeyvault" {
-  tenant_id      = "AZURE_TENANT_ID"
+  tenant_id      = "AZURE_AD_TENANT_ID"
   vault_name     = "vault-keyvault"
   key_name       = "vault-key"
 }

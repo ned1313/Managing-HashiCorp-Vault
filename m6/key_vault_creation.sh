@@ -10,7 +10,7 @@ az keyvault update --name "vault-keyvault" --resource-group "vault-keyvault" --e
 
 #Grant the VAULT VM access to manipulate keys in Azure Key Vault
 az vm list -g vault-azurevms --query '[].identity.principalId' -o tsv
-az keyvault set-policy --name "vault-keyvault" --object-id 9cc19bc3-baa8-4873-80ed-b20e1b18506a --key-permissions get list create delete update wrapKey unwrapKey
+az keyvault set-policy --name "vault-keyvault" --object-id PRINCIPAL_ID --key-permissions get list create delete update wrapKey unwrapKey
 
 #Create a key in key vault
 az keyvault key create --vault-name "vault-keyvault" --name "vault-key" --protection software --kty RSA --size 2048 --ops decrypt encrypt sign unwrapKey verify wrapKey

@@ -1,4 +1,4 @@
-#Connect to the Vault Server vi ssh
+#Connect to the Vault Server via ssh
 #Stop the Vault Server service
 sudo systemctl stop vault
 
