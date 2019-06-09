@@ -11,8 +11,9 @@
 # .tfplan files
 *.tfplan
 
-# .pem files
+# cert files
 *.pem
+*.pfx
 
 # .asc files
 *.asc
