@@ -59,7 +59,7 @@ resource "azurerm_subnet" "vault" {
 }
 
 #Public IP addresses for the virtual machines
-resource "azurerm_public_ip" "vault_publicip" {
+/*resource "azurerm_public_ip" "vault_publicip" {
   count               = "${var.count}"
   name                = "ip-${random_id.vault_rand.hex}-${count.index}"
   location            = "${var.arm_region}"
@@ -70,7 +70,8 @@ resource "azurerm_public_ip" "vault_publicip" {
   tags {
     environment = "${var.environment}-${random_id.vault_rand.hex}"
   }
-}
+}*/
+
 
 resource "azurerm_network_security_group" "vault_nsg" {
   name                = "nsg-${random_id.vault_rand.hex}"
@@ -180,6 +181,25 @@ resource "azurerm_network_interface_backend_address_pool_association" "nic_be" {
   ip_configuration_name   = "nic-${random_id.vault_rand.hex}-${count.index}"
   backend_address_pool_id = "${azurerm_lb_backend_address_pool.lb_be.id}"
 }
+
+resource "azurerm_lb_nat_rule" "ssh_nat" {
+    count = "${var.count}"
+    resource_group_name = "${azurerm_resource_group.vault.name}"
+  loadbalancer_id     = "${azurerm_lb.vault_lb.id}"
+  name = "ssh-nat-${count.index}"
+  protocol = "Tcp"
+  frontend_port = "202${count.index}"
+  backend_port = "22"
+  frontend_ip_configuration_name = "lb-pip"
+}
+
+resource "azurerm_network_interface_nat_rule_association" "ssh_nat_ass" {
+    count = "${var.count}"
+    network_interface_id    = "${azurerm_network_interface.vault_nic.*.id[count.index]}"
+  ip_configuration_name   = "nic-${random_id.vault_rand.hex}-${count.index}"
+  nat_rule_id           = "${azurerm_lb_nat_rule.ssh_nat.*.id[count.index]}"
+}
+
 
 # KEY VAULT #
 
@@ -352,12 +372,20 @@ resource "azurerm_network_interface" "vault_nic" {
     name                          = "nic-${random_id.vault_rand.hex}-${count.index}"
     subnet_id                     = "${azurerm_subnet.vault.id}"
     private_ip_address_allocation = "dynamic"
-    public_ip_address_id          = "${azurerm_public_ip.vault_publicip.*.id[count.index]}"
+    #public_ip_address_id          = "${azurerm_public_ip.vault_publicip.*.id[count.index]}"
   }
 
   tags {
     environment = "${var.environment}-${random_id.vault_rand.hex}"
   }
+}
+
+resource "azurerm_availability_set" "vault-vms" {
+    name = "vault-vms"
+    resource_group_name = "${azurerm_resource_group.vault.name}"
+    location = "${var.arm_region}"
+    managed = true
+
 }
 
 data "template_file" "setup" {
@@ -371,6 +399,7 @@ data "template_file" "setup" {
     mysql_server   = "${var.mysql_server_name}-${random_id.vault_rand.hex}"
     mysql_password = "${azurerm_key_vault_secret.mysql_secret.id}"
     cert_thumb     = "${azurerm_key_vault_certificate.vault_cert.thumbprint}"
+    api_server_domain = "${var.vault_domain}"
   }
 }
 
@@ -382,6 +411,7 @@ resource "azurerm_virtual_machine" "vault_vm" {
   network_interface_ids = ["${azurerm_network_interface.vault_nic.*.id[count.index]}"]
   vm_size               = "Standard_D2_V3"
   delete_os_disk_on_termination = true
+  availability_set_id = "${azurerm_availability_set.vault-vms.id}"
 
   identity = {
     type         = "UserAssigned"
@@ -389,7 +419,7 @@ resource "azurerm_virtual_machine" "vault_vm" {
   }
 
   storage_os_disk {
-    name              = "OsDisk"
+    name              = "OsDisk${count.index}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "StandardSSD_LRS"
@@ -405,7 +435,7 @@ resource "azurerm_virtual_machine" "vault_vm" {
   os_profile {
     computer_name  = "${var.vm_name}-${count.index}"
     admin_username = "vaultadmin"
-    custom_data    = "${data.template_file.setup.*.rendered[count.index]}"
+    custom_data    = "${data.template_file.setup.rendered}"
   }
 
   os_profile_secrets {

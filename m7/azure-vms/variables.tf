@@ -63,6 +63,11 @@ variable "vault_version" {
   default = "1.1.2"
 }
 
+variable "vault_domain" {
+  
+}
+
+
 variable "mysql_server_name" {
   default = "vault-mysql"
 }
