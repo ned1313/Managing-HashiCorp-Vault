@@ -15,3 +15,5 @@ aks_prefix = "vault"
 kubernetes_client_id = ""
 
 kubernetes_client_secret = ""
+
+vault_domain = ""
