@@ -13,11 +13,13 @@ variable "arm_resource_group_name" {
 
 #Provider authentication
 variable "arm_subscription_id" {}
+
 variable "arm_client_id" {}
 variable "arm_tenant_id" {}
 variable "arm_client_secret" {}
+
 variable "tenant_id" {
-    default = ""
+  default = ""
 }
 
 #Network info
@@ -35,12 +37,12 @@ variable "arm_subnet2_address_space" {
 
 #Key Vault info
 variable "key_name" {
-    description = "Azure Key Vault key name"
-    default = "generated-key"
+  description = "Azure Key Vault key name"
+  default     = "generated-key"
 }
 
 variable "environment" {
-    default = "Production"
+  default = "Production"
 }
 
 # Virtual Machine
@@ -49,7 +51,7 @@ variable "ssh_key_pub" {
 }
 
 variable "vm_name" {
-    default = "vault"
+  default = "vault"
 }
 
 variable "count" {
@@ -65,6 +67,4 @@ variable "mysql_server_name" {
   default = "vault-mysql"
 }
 
-variable "mysql_password" {
-  
-}
+variable "mysql_password" {}

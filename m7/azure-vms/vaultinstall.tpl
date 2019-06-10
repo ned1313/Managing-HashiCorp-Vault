@@ -5,6 +5,7 @@ sudo apt-get install -y unzip jq
 #Create a vault user 
 sudo useradd --system --home /etc/vault.d --shell /bin/false vault
 sudo mkdir --parents /opt/vault
+sudo mkdir /etc/vault.d
 sudo chown --recursive vault:vault /opt/vault
 
 #Get the vault executable
@@ -32,13 +33,18 @@ Group=vault
 [Install]
 WantedBy=multi-user.target
 EOF
+#Retrieve the mysql password
+token=$(curl --silent 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net' -H Metadata:true)
+raw_token=$(echo $token | jq -r .access_token)
+resp=$(curl --silent https://productionvault7734d34e.vault.azure.net/secrets/mysql-password/6a53ee8aee414124b3ef0eced98cb119?api-version=2016-10-01 -H "Authorization: Bearer $raw_token")
+mysql_password_value=$(echo $resp | jq -r .value)
 
-#Crate the vault server configuration file
+#Create the vault server configuration file
 cat << EOF > /etc/vault.d/config.hcl
 storage "mysql" {
   address = "${mysql_server}.mysql.database.azure.com:3306"
   username = "vaultsqladmin@${mysql_server}"
-  password = "${mysql_password}"
+  password = "$mysql_password_value"
   database = "vault"
   tls_ca_file = "/etc/vault.d/certs/mysql.pem"
 }
@@ -61,8 +67,9 @@ sudo chown -R vault:vault /etc/vault.d
 sudo chmod -R 0644 /etc/vault.d/*
 
 #copy the certificates
-sudo cp /var/lib/waagent/*.crt /etc/vault.d/certs/vault_cert.crt
-sudo cp /var/lib/waagent/*.prv /etc/vault.d/certs/vault_cert.key
+sudo mkdir /etc/vault.d/certs
+sudo cp /var/lib/waagent/${cert_thumb}.crt /etc/vault.d/certs/vault_cert.crt
+sudo cp /var/lib/waagent/${cert_thumb}.prv /etc/vault.d/certs/vault_cert.key
 sudo chown --recursive vault:vault /etc/vault.d/certs
 sudo chmod 750 --recursive /etc/vault.d/certs/
 
@@ -72,7 +79,7 @@ sudo cp ~/mysql.pem /etc/vault.d/certs/mysql.pem
 
 #Start the service
 sudo chmod 0664 /lib/systemd/system/vault.service
-systemctl daemon-reload
+sudo systemctl daemon-reload
 
 systemctl enable vault
 systemctl start vault
