@@ -32,10 +32,18 @@ variable "arm_subnet2_address_space" {
 }
 
 # Key Vault
+variable "vault_name" {}
+
+variable "vault_resource_group" {}
+
 variable "key_name" {
   description = "Azure Key Vault key name"
   default     = "generated-key"
 }
+
+variable "cert_name" {}
+
+variable "certificate_thumbprint" {}
 
 variable "environment" {
   default = "Production"
@@ -67,7 +75,5 @@ variable "vault_domain" {
 # MySQL
 
 variable "mysql_server_name" {
-  default = "vault-mysql"
-}
 
-variable "mysql_password" {}
+}

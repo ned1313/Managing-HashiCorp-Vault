@@ -30,7 +30,6 @@ resource "azurerm_user_assigned_identity" "vault_id" {
   name = "vault-vms"
 }
 
-data "azurerm_client_config" "current" {}
 
 # NETWORKING #
 module "vnet" {
@@ -51,21 +50,6 @@ resource "azurerm_subnet" "vault" {
   address_prefix       = "${var.arm_subnet2_address_space}"
   service_endpoints    = ["Microsoft.Sql"]
 }
-
-#Public IP addresses for the virtual machines
-/*resource "azurerm_public_ip" "vault_publicip" {
-  count               = "${var.count}"
-  name                = "ip-${random_id.vault_rand.hex}-${count.index}"
-  location            = "${var.arm_region}"
-  resource_group_name = "${azurerm_resource_group.vault.name}"
-  allocation_method   = "Static"
-  sku                 = "Standard"
-
-  tags {
-    environment = "${var.environment}-${random_id.vault_rand.hex}"
-  }
-}*/
-
 
 resource "azurerm_network_security_group" "vault_nsg" {
   name                = "nsg-${random_id.vault_rand.hex}"
@@ -197,73 +181,29 @@ resource "azurerm_network_interface_nat_rule_association" "ssh_nat_ass" {
 
 # KEY VAULT ITEMS #
 
-resource "azurerm_key_vault" "vault" {
-  name                        = "${var.environment}vault${random_id.vault_rand.hex}"
-  location                    = "${azurerm_resource_group.vault.location}"
-  resource_group_name         = "${azurerm_resource_group.vault.name}"
-  enabled_for_deployment      = true
-  enabled_for_disk_encryption = true
-  tenant_id                   = "${var.arm_tenant_id}"
+data "azurerm_key_vault" "vault_keyvault" {
+  name = "${var.vault_name}"
+  resource_group_name = "${var.vault_resource_group}"
+}
 
-  sku {
-    name = "standard"
-  }
+data "azurerm_key_vault_secret" "mysql_password" {
+  name = "${var.mysql_password_name}"
+  key_vault_id = "${data.azurerm_key_vault.vault_keyvault.id}"
+}
 
-  access_policy {
-    tenant_id = "${var.arm_tenant_id}"
-    object_id = "${data.azurerm_client_config.current.service_principal_object_id}"
+data "azurerm_key_vault_secret" "vault_cert" {
+  name = "${var.cert_name}"
+  key_vault_id = "${data.azurerm_key_vault.vault_keyvault.id}"
+}
 
-    key_permissions = [
-      "backup",
-      "create",
-      "decrypt",
-      "delete",
-      "encrypt",
-      "get",
-      "import",
-      "list",
-      "purge",
-      "recover",
-      "restore",
-      "sign",
-      "unwrapKey",
-      "update",
-      "verify",
-      "wrapKey",
-    ]
+resource "azurerm_key_vault_access_policy" "vault-recovery" {
+  vault_name = "${var.vault_name}"
+  resource_group_name = "${var.vault_resource_group}"
 
-    secret_permissions = [
-      "backup",
-      "delete",
-      "get",
-      "list",
-      "purge",
-      "recover",
-      "restore",
-      "set",
-    ]
+  tenant_id = "${data.azurerm_key_vault.vault_keyvault.tenant_id}"
+  object_id = "${azurerm_user_assigned_identity.vault_id.principal_id}"
 
-    certificate_permissions = [
-      "create",
-      "delete",
-      "deleteissuers",
-      "get",
-      "getissuers",
-      "import",
-      "list",
-      "listissuers",
-      "managecontacts",
-      "manageissuers",
-      "setissuers",
-      "update",
-    ]
-  }
-
-  access_policy {
-    tenant_id = "${var.arm_tenant_id}"
-    object_id = "${azurerm_user_assigned_identity.vault_id.principal_id}"
-
-    certificate_permissions = [
+  certificate_permissions = [
       "get",
       "getissuers",
       "import",
@@ -285,61 +225,6 @@ resource "azurerm_key_vault" "vault" {
     secret_permissions= [
         "get",
     ]
-  }
-
-  /*network_acls {
-    default_action = "Allow"
-    bypass         = "AzureServices"
-  }*/
-}
-
-resource "azurerm_key_vault_key" "generated" {
-  name         = "${var.key_name}"
-  key_vault_id = "${azurerm_key_vault.vault.id}"
-  key_type     = "RSA"
-  key_size     = 2048
-
-  key_opts = [
-    "decrypt",
-    "encrypt",
-    "sign",
-    "unwrapKey",
-    "verify",
-    "wrapKey",
-  ]
-}
-
-resource "azurerm_key_vault_certificate" "vault_cert" {
-  name         = "vault-cert"
-  key_vault_id = "${azurerm_key_vault.vault.id}"
-
-  certificate {
-    contents = "${base64encode(file("bundle.pfx"))}"
-    password = "vaultadmin"
-  }
-
-  certificate_policy {
-    issuer_parameters {
-      name = "Self"
-    }
-
-    key_properties {
-      exportable = true
-      key_size   = 2048
-      key_type   = "RSA"
-      reuse_key  = false
-    }
-
-    secret_properties {
-      content_type = "application/x-pkcs12"
-    }
-  }
-}
-
-resource "azurerm_key_vault_secret" "mysql_secret" {
-  name         = "mysql-password"
-  value        = "${var.mysql_password}"
-  key_vault_id = "${azurerm_key_vault.vault.id}"
 }
 
 #  VIRTUAL MACHINE RESOURCES #
@@ -354,7 +239,7 @@ resource "azurerm_network_interface" "vault_nic" {
     name                          = "nic-${random_id.vault_rand.hex}-${count.index}"
     subnet_id                     = "${azurerm_subnet.vault.id}"
     private_ip_address_allocation = "dynamic"
-    #public_ip_address_id          = "${azurerm_public_ip.vault_publicip.*.id[count.index]}"
+
   }
 
 }
@@ -372,12 +257,12 @@ data "template_file" "setup" {
 
   vars = {
     tenant_id      = "${var.arm_tenant_id}"
-    vault_name     = "${azurerm_key_vault.vault.name}"
+    vault_name     = "${var.vault_name}"
     key_name       = "${var.key_name}"
     vault_version  = "${var.vault_version}"
-    mysql_server   = "${element(split(".",azurerm_mysql_server.vaultmysql.fqdn),0)}"
-    mysql_password = "${azurerm_key_vault_secret.mysql_secret.id}"
-    cert_thumb     = "${azurerm_key_vault_certificate.vault_cert.thumbprint}"
+    mysql_server   = "${var.mysql_server_name}"
+    mysql_password = "${data.azurerm_key_vault_secret.mysql_password.id}"
+    cert_thumb     = "${var.certificate_thumbprint}"
     vault_domain   = "${var.vault_domain}"
   }
 }
@@ -418,10 +303,10 @@ resource "azurerm_virtual_machine" "vault_vm" {
   }
 
   os_profile_secrets {
-    source_vault_id = "${azurerm_key_vault.vault.id}"
+    source_vault_id = "${data.azurerm_key_vault.vault_keyvault.id}"
 
     vault_certificates {
-      certificate_url = "${azurerm_key_vault_certificate.vault_cert.secret_id}"
+      certificate_url = "${data.azurerm_key_vault_secret.vault_cert.id}"
     }
   }
 
@@ -436,51 +321,9 @@ resource "azurerm_virtual_machine" "vault_vm" {
 
 }
 
-# MYSQL 
-
-resource "azurerm_mysql_server" "vaultmysql" {
-  name                = "${var.mysql_server_name}-${random_id.vault_rand.hex}"
-  location            = "${var.arm_region}"
-  resource_group_name = "${azurerm_resource_group.vault.name}"
-
-  sku {
-    name     = "GP_Gen5_2"
-    capacity = 2
-    tier     = "GeneralPurpose"
-    family   = "Gen5"
-  }
-
-  storage_profile {
-    storage_mb            = 5120
-    backup_retention_days = 7
-    geo_redundant_backup  = "Disabled"
-  }
-
-  administrator_login          = "vaultsqladmin"
-  administrator_login_password = "${var.mysql_password}"
-  version                      = "5.7"
-  ssl_enforcement              = "Enabled"
-}
-
 resource "azurerm_mysql_virtual_network_rule" "vaultvnetrule" {
   name                = "vault-vnet-rule"
   resource_group_name = "${azurerm_resource_group.vault.name}"
-  server_name         = "${azurerm_mysql_server.vaultmysql.name}"
+  server_name         = "${var.mysql_server_name}"
   subnet_id           = "${azurerm_subnet.vault.id}"
-}
-
-resource "azurerm_mysql_database" "vaultdb" {
-  name                = "vaultdb"
-  resource_group_name = "${azurerm_resource_group.vault.name}"
-  server_name         = "${azurerm_mysql_server.vaultmysql.name}"
-  charset             = "utf8"
-  collation           = "utf8_unicode_ci"
-}
-
-output "mysql_fqdn" {
-  value = "${azurerm_mysql_server.vaultmysql.fqdn}"
-}
-
-output "mysql_name" {
-  value = "${element(split(".",azurerm_mysql_server.vaultmysql.fqdn),0)}"
 }
