@@ -66,7 +66,7 @@ seal "azurekeyvault" {
 }
 ui=true
 disable_mlock = false
-api_addr = "https://vault.${vault_domain}:8200"
+api_addr = "https://vault-recover.${vault_domain}:8200"
 cluster_addr = "https://$ip_addr:8201"
 EOF
 

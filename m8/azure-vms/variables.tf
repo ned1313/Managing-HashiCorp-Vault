@@ -41,12 +41,19 @@ variable "key_name" {
   default     = "generated-key"
 }
 
-variable "cert_name" {}
+variable "cert_name" {
+  default = "vault-cert"
+}
 
 variable "certificate_thumbprint" {}
 
+variable "mysql_password_name" {
+  default = "mysql-password"
+}
+
+
 variable "environment" {
-  default = "Production"
+  default = "Recovery"
 }
 
 # Virtual Machine

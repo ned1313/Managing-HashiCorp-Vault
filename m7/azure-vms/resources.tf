@@ -453,7 +453,7 @@ resource "azurerm_mysql_server" "vaultmysql" {
   storage_profile {
     storage_mb            = 5120
     backup_retention_days = 7
-    geo_redundant_backup  = "Disabled"
+    geo_redundant_backup  = "Enabled"
   }
 
   administrator_login          = "vaultsqladmin"

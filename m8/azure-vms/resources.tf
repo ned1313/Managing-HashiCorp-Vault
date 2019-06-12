@@ -27,7 +27,7 @@ resource "random_id" "vault_rand" {
 resource "azurerm_user_assigned_identity" "vault_id" {
   resource_group_name = "${azurerm_resource_group.vault.name}"
   location            = "${var.arm_region}"
-  name = "vault-vms"
+  name = "vault-recovery"
 }
 
 
@@ -92,9 +92,6 @@ resource "azurerm_network_security_group" "vault_nsg" {
     destination_address_prefix = "*"
   }
 
-  tags {
-    environment = "${var.environment}-${random_id.vault_rand.hex}"
-  }
 }
 
 # LOAD BALANCER ITEMS #
@@ -323,7 +320,7 @@ resource "azurerm_virtual_machine" "vault_vm" {
 
 resource "azurerm_mysql_virtual_network_rule" "vaultvnetrule" {
   name                = "vault-vnet-rule"
-  resource_group_name = "${azurerm_resource_group.vault.name}"
+  resource_group_name = "${var.vault_resource_group}"
   server_name         = "${var.mysql_server_name}"
   subnet_id           = "${azurerm_subnet.vault.id}"
 }
